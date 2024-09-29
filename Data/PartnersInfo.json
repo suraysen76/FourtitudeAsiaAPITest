@@ -1,0 +1,17 @@
+
+[  
+    {
+      "PartnerNo": "FG-00001",
+      "AllowedPartner": "FAKEGOOGLE",
+      "Password": "FAKEPASSWORD1234"      
+      
+    },
+    {
+      "PartnerNo": "FG-00002",
+      "AllowedPartner": "FAKEPEOPLE",
+      "Password": "FAKEPASSWORD4578"
+    }   
+]
+
+		
+		
