@@ -5,13 +5,13 @@ namespace FourtitudeAsiaAPITest.Interfaces
     public interface ITransactionService
     {
         Task<TrxRequestModel> GetValidTrx();
-        bool AuthenticateTrx(TrxRequestModel model);
+        ResponseModel AuthenticateTrx(TrxRequestModel model);
 
-        bool IsNotExpired(TrxRequestModel model);
+        ResponseModel IsNotExpired(TrxRequestModel model);
 
-        bool IsTotalAmountValid(TrxRequestModel model);
+        ResponseModel IsTotalAmountValid(TrxRequestModel model);
 
-        List<string> IsRequiredParmValid(TrxRequestModel model);
+        ResponseModel IsRequiredParmValid(TrxRequestModel model);
 
         decimal GetDiscount(TrxRequestModel model);
     }

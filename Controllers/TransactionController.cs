@@ -4,7 +4,9 @@ using FourtitudeAsiaAPITest.Services;
 using FourtitudeAsiaAPITest.Utilities;
 using log4net;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using System.Net;
+using static System.Reflection.Metadata.BlobBuilder;
 
 namespace FourtitudeAsiaAPITest.Controllers
 {
@@ -26,47 +28,75 @@ namespace FourtitudeAsiaAPITest.Controllers
         {
 
             var continueValidation= true;
+            var responseModel = new ResponseModel() { result=1};
             var responseStr=String.Empty;
             var trx = _trxService.GetValidTrx().Result;
 
 
-            while (continueValidation)
+            responseModel = _trxService.AuthenticateTrx(trx);
+            if (responseModel.result == 1)
             {
-                continueValidation= _trxService.AuthenticateTrx(trx);
-                continueValidation = _trxService.IsNotExpired(trx);
-                continueValidation = _trxService.IsTotalAmountValid(trx);
-                if(_trxService.IsRequiredParmValid(trx).Count() == 0)
-                {
-                    continueValidation = true;
-                }
-                else
-                {
-                    continueValidation =false;
-                }
+                responseModel = _trxService.IsTotalAmountValid(trx);
             }
-            //var isAuthenticated = _trxService.AuthenticateTrx(trx);
-            //var isNotExpired = _trxService.IsNotExpired(trx);
-            //var isTotalAmtValid = _trxService.IsTotalAmountValid(trx);
-            //var isReqParmValid = _trxService.IsRequiredParmValid(trx);
+            if (responseModel.result == 1)
+            {
+                responseModel = _trxService.IsNotExpired(trx);
+            }
+            if (responseModel.result == 1)
+            {
+                responseModel = _trxService.IsRequiredParmValid(trx);
+            }          
+           
             var discount = _trxService.GetDiscount(trx);
-            if (!continueValidation)
+            if (responseModel.result == 1)
             {                
-                var obj = new SuccessResponseModel();
+                var obj = new ResponseModel();
                 obj.result = 1;
                 obj.totalamount = trx.totalamount;
                 obj.totaldiscount =(decimal) (discount/100 * obj.totalamount);
                 obj.finalamount= (int) obj.totalamount- (int) obj.totaldiscount;
-                responseStr=Utility.Serialize(obj);
+                
+                responseStr =Utility.Serialize(obj);
+
+                var jsonParsed = JObject.Parse(responseStr);
+
+                jsonParsed.Properties()
+                 .Where(attr => attr.Name == "resultmessage")
+                 .First()
+                 .Remove();
+                jsonParsed.Properties()
+                 .Where(attr => attr.Name == "resultmessagedescription")
+                 .First()
+                 .Remove();
+
+                responseStr = jsonParsed.ToString();
+
                 log.Info("Trx received :" + Utility.Serialize(trx));
                 log.Info("Succrss :" + responseStr);
             }
             else
             {
-                var obj = new ErrorResponseModel();
+                var obj = new ResponseModel();
                 obj.result = 0;
-                obj.resultmessage = "Access Denied!";
-                obj.resultmessagedescription= "Unauthorized partner or Signature Mismatch";
+                obj.resultmessage= responseModel.resultmessage;
+                obj.resultmessagedescription = responseModel.resultmessagedescription;
                 responseStr = Utility.Serialize(obj);
+                var jsonParsed = JObject.Parse(responseStr);
+
+                jsonParsed.Properties()
+                 .Where(attr => attr.Name == "totalamount")
+                 .First()
+                 .Remove();
+                jsonParsed.Properties()
+                 .Where(attr => attr.Name == "totaldiscount")
+                 .First()
+                 .Remove();
+                jsonParsed.Properties()
+                 .Where(attr => attr.Name == "finalamount")
+                 .First()
+                 .Remove();
+
+                responseStr = jsonParsed.ToString(); 
                 log.Error("Trx received :" + Utility.Serialize(trx));
                 log.Error("Error :" + responseStr);
             }
